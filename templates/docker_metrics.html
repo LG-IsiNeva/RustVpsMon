@@ -1,0 +1,32 @@
+{% if containers.is_empty() %}
+<p>No containers running.</p>
+{% else %}
+<div class="docker-grid">
+    {% for c in containers %}
+    <div class="docker-card {% if !c.is_running %}docker-card-down{% endif %}">
+        <div class="docker-card-header">
+            <span class="docker-card-name" title="{{ c.container_name }}">{{ c.container_name }}</span>
+            {% if c.is_running %}
+            <span class="pill pill-ok">RUNNING</span>
+            {% else %}
+            <span class="pill pill-critical">STOPPED</span>
+            {% endif %}
+        </div>
+
+        {% if !c.version.is_empty() %}
+        <div class="docker-card-version">{{ c.version }}</div>
+        {% endif %}
+
+        <div class="docker-card-footer">
+            <span>Uptime: {{ c.created_ago }}</span>
+        </div>
+
+        <div class="docker-timeline">
+            {% for bar in c.timeline %}
+            <div class="docker-bar {{ bar }}"></div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

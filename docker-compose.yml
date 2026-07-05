@@ -1,0 +1,28 @@
+services:
+  rustmon:
+    build: .
+    container_name: rustmon_agent
+    restart: always
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      # Discover and monitor sibling containers via bollard
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Read-only host root, so RUSTMON_DISK_PATH=/host reports the real
+      # VPS disk usage instead of the container's own overlay filesystem
+      - /:/host:ro
+      # Persist the SQLite history across container restarts
+      - ./data:/app/data
+
+    # Optional: copy .env.example to .env to set alert thresholds, SMTP,
+    # or webhook — file is not required, container runs fine without it.
+    env_file:
+      - path: ./.env
+        required: false
+
+    environment:
+      - RUSTMON_BIND_ADDR=0.0.0.0:3000
+      - RUSTMON_DB_PATH=/app/data/data.db
+      - RUSTMON_DISK_PATH=/host

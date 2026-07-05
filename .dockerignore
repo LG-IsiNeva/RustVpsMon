@@ -1,0 +1,7 @@
+target
+.git
+.rtk
+.claude
+data.db
+.env
+*.md

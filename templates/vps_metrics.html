@@ -1,0 +1,19 @@
+<div class="vps-card">
+<div class="vps-metrics">
+    <div class="vps-metric">
+        <span class="vps-label">CPU USAGE</span>
+        <span class="vps-value" style="color: {{ cpu_color }};">{{ cpu_pct }}%</span>
+        <div class="vps-track"><div class="vps-fill" style="width: {{ cpu_pct }}%; background-color: {{ cpu_color }};"></div></div>
+    </div>
+    <div class="vps-metric">
+        <span class="vps-label">MEM USAGE</span>
+        <span class="vps-value" style="color: {{ mem_color }};">{{ mem_pct }}%</span>
+        <div class="vps-track"><div class="vps-fill" style="width: {{ mem_pct }}%; background-color: {{ mem_color }};"></div></div>
+    </div>
+    <div class="vps-metric">
+        <span class="vps-label">DISK</span>
+        <span class="vps-value" style="color: {{ disk_color }};">{{ disk_pct }}%</span>
+        <div class="vps-track"><div class="vps-fill" style="width: {{ disk_pct }}%; background-color: {{ disk_color }};"></div></div>
+    </div>
+</div>
+</div>

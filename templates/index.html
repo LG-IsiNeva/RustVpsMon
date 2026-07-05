@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EloNeva Monitoring</title>
+    <link rel="stylesheet" href="/assets/pico.min.css">
+    <link rel="stylesheet" href="/assets/style.css">
+    <script defer src="/assets/alpine.min.js"></script>
+    <script src="/assets/htmx.min.js"></script>
+    <script src="/assets/htmx-sse.min.js"></script>
+</head>
+<body hx-ext="sse" sse-connect="/api/stream">
+    <main class="container">
+        <section>
+            <div class="section-header">
+                <h2 class="h4">VPS Metrics</h2>
+                <div class="section-header-status">
+                    <span class="status-label">SYSTEM STATUS</span>
+                    <span class="pill pill-ok">ONLINE</span>
+                </div>
+            </div>
+            <div id="vps-metrics" sse-swap="vps-metrics" class="vps-metrics-grid">
+                <p aria-busy="true">Synchronisation des métriques hôte...</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-header">
+                <h2 class="h4">Docker Containers</h2>
+                <div id="vps-alerts" sse-swap="alerts" class="vps-alerts-grid" x-data="{ open: false }">
+                    <p aria-busy="true">Synchronisation des alertes...</p>
+                </div>
+            </div>
+            <div id="docker-metrics" sse-swap="docker-metrics">
+                <p aria-busy="true">Chargement des conteneurs...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="container">
+        <small>Mise à jour en temps réel via SSE & HTMX • UI optimisée avec Pico & Alpine</small>
+    </footer>
+</body>
+</html>

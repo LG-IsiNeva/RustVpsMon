@@ -1,0 +1,52 @@
+{% if unacknowledged_count > 0 %}
+<button type="button" class="pill pill-critical alert-bell" @click="open = true">
+    <span class="alert-bell-icon">🔔</span>
+    <span>{{ unacknowledged_count }} ALERTS</span>
+</button>
+{% else %}
+<button type="button" class="pill pill-neutral alert-bell" @click="open = true">
+    <span class="alert-bell-icon">🔔</span>
+    <span>0 ALERTS</span>
+</button>
+{% endif %}
+
+<div class="alert-modal-backdrop" x-show="open" x-cloak @click.self="open = false" @keydown.escape.window="open = false">
+    <div class="alert-modal">
+        <header class="alert-modal-header">
+            <strong>Alertes en cours</strong>
+            <button type="button" class="alert-modal-close" @click="open = false" aria-label="Fermer">&times;</button>
+        </header>
+        {% if alerts.is_empty() %}
+        <p>Aucune alerte active.</p>
+        {% else %}
+        <table class="alert-table">
+            <thead>
+                <tr>
+                    <th>Composant</th>
+                    <th>Message</th>
+                    <th>Horodatage</th>
+                    <th>Statut</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in alerts %}
+                <tr class="alert-row-{{ a.status.to_lowercase() }}">
+                    <td>{{ a.component }}</td>
+                    <td>{{ a.message }}</td>
+                    <td>{{ a.timestamp }}</td>
+                    <td>{{ a.status }}</td>
+                    <td>
+                        {% if a.status == "TRIGGERED" %}
+                        <button hx-post="/api/alerts/{{ a.id }}/acknowledge" hx-swap="none">Acquitter</button>
+                        {% else %}
+                        <span class="alert-pill">acquittée</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
