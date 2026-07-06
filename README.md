@@ -72,3 +72,9 @@ Prérequis : Rust édition 2024 (rustc ≥ 1.85). Pour le monitoring Docker, l'u
 | Collecte Docker | `bollard` | Découverte + stats des conteneurs |
 | Config | `serde`, `envy`, `dotenvy` | `.env` → struct `Config` typée |
 | Notifications | `lettre` (SMTP), `reqwest` (webhook) | Alertes e-mail / webhook |
+
+## License
+
+This project is licensed under the MIT License.
+
+Copyright (c) 2026 EloNeva - Laurent Glesner
