@@ -61,6 +61,11 @@ section { margin-bottom: 2rem; }
 .pill-ok { color: var(--mnt-status-ok); }
 .pill-critical { color: var(--mnt-status-critical); }
 .pill-neutral { color: var(--pico-muted-color, #9ca3af); }
+.pill-warn { color: var(--mnt-status-warn); }
+
+.docker-card-health {
+    margin-top: 0.4rem;
+}
 
 /* VPS metrics card */
 .vps-card {
@@ -69,7 +74,9 @@ section { margin-bottom: 2rem; }
     background: var(--mnt-card-bg);
     padding: 1.5rem;
 }
-
+.vps-row {
+  align-items: center;
+}
 .vps-metrics {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

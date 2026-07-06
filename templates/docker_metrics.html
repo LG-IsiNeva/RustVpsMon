@@ -11,6 +11,7 @@
             {% else %}
             <span class="pill pill-critical">STOPPED</span>
             {% endif %}
+            <span class="pill {{ c.health.pill_class() }}">{{ c.health.label() }}</span>
             <button type="button" class="docker-logs-btn" title="View logs"
                     aria-label="View logs for {{ c.container_name }}"
                     @click="logsOpen = true; logsContainer = '{{ c.container_name }}'"

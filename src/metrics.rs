@@ -8,6 +8,34 @@ pub struct VpsSample {
     pub disk_total: u64,
 }
 
+/// Container healthcheck status, derived from Docker's `Health.Status`.
+/// `Unknown` covers containers with no `HEALTHCHECK` defined, in a
+/// `starting` state, or reported by a daemon too old to expose health.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HealthStatus {
+    Healthy,
+    Unhealthy,
+    Unknown,
+}
+
+impl HealthStatus {
+    pub fn pill_class(&self) -> &'static str {
+        match self {
+            Self::Healthy => "pill-ok",
+            Self::Unhealthy => "pill-warn",
+            Self::Unknown => "pill-neutral",
+        }
+    }
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Healthy => "HEALTHY",
+            Self::Unhealthy => "UNHEALTHY",
+            Self::Unknown => "UNKNOWN",
+        }
+    }
+}
+
 /// Snapshot of a single container's resource usage, sampled by the Docker collector.
 #[derive(Debug, Clone)]
 pub struct DockerSample {
@@ -17,6 +45,7 @@ pub struct DockerSample {
     /// Image tag/version (e.g. `v3.7.6`), empty if untagged.
     pub version: String,
     pub is_running: bool,
+    pub health: HealthStatus,
     /// Human relative time since the container was created (e.g. `9h ago`).
     pub created_ago: String,
     /// Fixed-length uptime timeline over the last 24h, oldest first. Each

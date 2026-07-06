@@ -2,15 +2,26 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use bollard::Docker;
-use bollard::models::ContainerSummaryStateEnum;
+use bollard::models::{ContainerSummaryHealth, ContainerSummaryHealthStatusEnum, ContainerSummaryStateEnum};
 use bollard::query_parameters::{ListContainersOptions, StatsOptions};
 use futures_util::StreamExt;
 use tokio::sync::broadcast;
 
 use crate::alerts;
 use crate::db::{self, Pool};
-use crate::metrics::{DockerSample, MetricEvent};
+use crate::metrics::{DockerSample, HealthStatus, MetricEvent};
 use crate::notify::Notifier;
+
+/// Maps Docker's health status to our badge state. Containers with no
+/// `HEALTHCHECK` defined, still `starting`, or on a daemon too old to
+/// report health all collapse to `Unknown`.
+fn map_health(health: Option<ContainerSummaryHealth>) -> HealthStatus {
+    match health.and_then(|h| h.status) {
+        Some(ContainerSummaryHealthStatusEnum::HEALTHY) => HealthStatus::Healthy,
+        Some(ContainerSummaryHealthStatusEnum::UNHEALTHY) => HealthStatus::Unhealthy,
+        _ => HealthStatus::Unknown,
+    }
+}
 
 const TIMELINE_BUCKETS: usize = 48;
 const TIMELINE_WINDOW_HOURS: i64 = 24;
@@ -50,6 +61,7 @@ pub async fn run(
                         .to_string();
 
                     let is_running = container.state == Some(ContainerSummaryStateEnum::RUNNING);
+                    let health = map_health(container.health);
                     let created_at = container.created.unwrap_or(0);
                     let (image_repo, version) = split_image(container.image.as_deref().unwrap_or(""));
 
@@ -78,6 +90,7 @@ pub async fn run(
                             image_repo,
                             version,
                             is_running,
+                            health,
                             created_ago: humanize_ago(created_at),
                             timeline,
                         });
