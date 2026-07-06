@@ -25,7 +25,7 @@
             </div>
         </section>
 
-        <section>
+        <section x-data="{ logsOpen: false, logsContainer: '' }">
             <div class="section-header">
                 <h2 class="h4">Docker Containers</h2>
                 <div id="vps-alerts" sse-swap="alerts" class="vps-alerts-grid" x-data="{ open: false }">
@@ -34,6 +34,24 @@
             </div>
             <div id="docker-metrics" sse-swap="docker-metrics">
                 <p aria-busy="true">Chargement des conteneurs...</p>
+            </div>
+
+            <div class="logs-modal-backdrop" x-show="logsOpen" x-cloak
+                 @click.self="logsOpen = false" @keydown.escape.window="logsOpen = false">
+                <div class="logs-modal">
+                    <header class="logs-modal-header">
+                        <strong x-text="logsContainer"></strong>
+                        <div>
+                            <button type="button"
+                                    @click="htmx.ajax('GET', '/api/containers/' + logsContainer + '/logs', { target: '#container-logs-body', swap: 'innerHTML' })">
+                                Refresh
+                            </button>
+                            <button type="button" class="logs-modal-close" @click="logsOpen = false" aria-label="Fermer">&times;</button>
+                        </div>
+                    </header>
+                    <span id="container-logs-spinner" class="htmx-indicator" aria-busy="true">Loading…</span>
+                    <div id="container-logs-body" class="logs-modal-body"></div>
+                </div>
             </div>
         </section>
     </main>

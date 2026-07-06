@@ -39,7 +39,8 @@ async fn main() -> anyhow::Result<()> {
     ));
     tokio::spawn(purge_task(pool.clone(), config.retention_days));
 
-    let app = web::routes::router(tx, pool.clone());
+    let web_docker = Arc::new(bollard::Docker::connect_with_local_defaults()?);
+    let app = web::routes::router(tx, pool.clone(), web_docker);
     let listener = TcpListener::bind(&config.bind_addr).await?;
     tracing::info!(addr = %config.bind_addr, "rustmon listening");
     axum::serve(listener, app).await?;

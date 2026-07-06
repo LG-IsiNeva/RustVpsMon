@@ -8,6 +8,8 @@ use axum::response::sse::{Event, Sse};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::Router;
+use bollard::query_parameters::LogsOptions;
+use bollard::Docker;
 use futures_util::stream::{self, Stream};
 use rust_embed::RustEmbed;
 use tokio::sync::broadcast;
@@ -17,7 +19,9 @@ use tokio_stream::StreamExt as _;
 use crate::alerts;
 use crate::db::{self, Pool};
 use crate::metrics::MetricEvent;
-use crate::web::templates::{AlertsTemplate, DockerMetricsTemplate, IndexTemplate, VpsMetricsTemplate};
+use crate::web::templates::{
+    AlertsTemplate, ContainerLogsTemplate, DockerMetricsTemplate, IndexTemplate, VpsMetricsTemplate,
+};
 
 #[derive(RustEmbed)]
 #[folder = "assets/"]
@@ -27,15 +31,17 @@ struct Assets;
 pub struct AppState {
     pub tx: Arc<broadcast::Sender<MetricEvent>>,
     pub pool: Pool,
+    pub docker: Arc<Docker>,
 }
 
-pub fn router(tx: Arc<broadcast::Sender<MetricEvent>>, pool: Pool) -> Router {
+pub fn router(tx: Arc<broadcast::Sender<MetricEvent>>, pool: Pool, docker: Arc<Docker>) -> Router {
     Router::new()
         .route("/", get(index))
         .route("/api/stream", get(stream))
         .route("/api/alerts/{id}/acknowledge", post(acknowledge_alert))
+        .route("/api/containers/{name}/logs", get(container_logs))
         .route("/assets/{*path}", get(asset))
-        .with_state(AppState { tx, pool })
+        .with_state(AppState { tx, pool, docker })
 }
 
 async fn index() -> impl IntoResponse {
@@ -98,4 +104,51 @@ async fn acknowledge_alert(State(state): State<AppState>, Path(id): Path<i64>) -
     }
     alerts::broadcast_active_alerts(&state.pool, &state.tx).await;
     StatusCode::NO_CONTENT
+}
+
+async fn container_logs(State(state): State<AppState>, Path(name): Path<String>) -> impl IntoResponse {
+    let options = LogsOptions {
+        stdout: true,
+        stderr: true,
+        tail: "500".to_string(),
+        timestamps: false,
+        follow: false,
+        ..Default::default()
+    };
+
+    let mut stream = state.docker.logs(&name, Some(options));
+    let mut logs = String::new();
+    let mut error: Option<String> = None;
+
+    loop {
+        match stream.next().await {
+            Some(Ok(chunk)) => logs.push_str(&chunk.to_string()),
+            Some(Err(bollard::errors::Error::DockerResponseServerError { status_code: 404, .. })) => {
+                error = Some(format!(
+                    "Container \"{name}\" not found — it may have been removed or renamed."
+                ));
+                break;
+            }
+            Some(Err(bollard::errors::Error::DockerResponseServerError { status_code, message })) => {
+                error = Some(format!("Docker returned an error ({status_code}): {message}"));
+                break;
+            }
+            Some(Err(err @ (bollard::errors::Error::HyperResponseError { .. } | bollard::errors::Error::IOError { .. }))) => {
+                tracing::warn!(%err, name, "docker daemon unreachable while fetching logs");
+                error = Some("Could not reach the Docker daemon. Is it running?".to_string());
+                break;
+            }
+            Some(Err(err)) => {
+                error = Some(format!("Failed to read logs: {err}"));
+                break;
+            }
+            None => break,
+        }
+    }
+
+    let template = ContainerLogsTemplate { logs, error };
+    match template.render() {
+        Ok(html) => Html(html).into_response(),
+        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
+    }
 }

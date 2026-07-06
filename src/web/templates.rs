@@ -68,6 +68,13 @@ impl From<Vec<DockerSample>> for DockerMetricsTemplate {
 }
 
 #[derive(Template)]
+#[template(path = "container_logs.html")]
+pub struct ContainerLogsTemplate {
+    pub logs: String,
+    pub error: Option<String>,
+}
+
+#[derive(Template)]
 #[template(path = "alerts.html")]
 pub struct AlertsTemplate {
     pub alerts: Vec<Alert>,

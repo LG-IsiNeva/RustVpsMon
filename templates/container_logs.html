@@ -1,0 +1,7 @@
+{% if let Some(err) = error %}
+<div class="logs-error" role="alert">{{ err }}</div>
+{% else if logs.is_empty() %}
+<p>No log output.</p>
+{% else %}
+<pre class="logs-content">{{ logs }}</pre>
+{% endif %}
