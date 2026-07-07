@@ -6,32 +6,34 @@
     <div class="docker-card {% if !c.is_running %}docker-card-down{% endif %}">
         <div class="docker-card-header">
             <span class="docker-card-name" title="{{ c.container_name }}">{{ c.container_name }}</span>
-            {% if c.is_running %}
-            <span class="pill pill-ok">RUNNING</span>
-            {% else %}
-            <span class="pill pill-critical">STOPPED</span>
-            {% endif %}
-            <span class="pill {{ c.health.pill_class() }}">{{ c.health.label() }}</span>
-            <button type="button" class="docker-logs-btn" title="View logs"
-                    aria-label="View logs for {{ c.container_name }}"
-                    @click="logsOpen = true; logsContainer = '{{ c.container_name }}'"
-                    hx-get="/api/containers/{{ c.container_name }}/logs"
-                    hx-target="#container-logs-body" hx-swap="innerHTML"
-                    hx-indicator="#container-logs-spinner">📄</button>
+            <div class="docker-card-badges">
+                {% if c.is_running %}
+                <span class="pill pill-ok">RUNNING</span>
+                {% else %}
+                <span class="pill pill-critical">STOPPED</span>
+                {% endif %}
+                <span class="pill {{ c.health.pill_class() }}">{{ c.health.label() }}</span>
+                <button type="button" class="docker-logs-btn" title="View logs"
+                        aria-label="View logs for {{ c.container_name }}"
+                        @click="logsOpen = true; logsContainer = '{{ c.container_name }}'"
+                        hx-get="/api/containers/{{ c.container_name }}/logs"
+                        hx-target="#container-logs-body" hx-swap="innerHTML"
+                        hx-indicator="#container-logs-spinner">📄</button>
+            </div>
         </div>
 
         {% if !c.version.is_empty() %}
         <div class="docker-card-version">{{ c.version }}</div>
         {% endif %}
 
-        <div class="docker-card-footer">
-            <span>Uptime: {{ c.created_ago }}</span>
-        </div>
-
         <div class="docker-timeline">
             {% for bar in c.timeline %}
             <div class="docker-bar {{ bar }}"></div>
             {% endfor %}
+        </div>
+
+        <div class="docker-card-footer">
+            <span>Created: {{ c.created_ago }}</span>
         </div>
     </div>
     {% endfor %}
