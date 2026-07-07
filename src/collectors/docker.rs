@@ -85,6 +85,8 @@ pub async fn run(
                         let timeline =
                             build_timeline(&pool, &name, created_at, is_running).await;
 
+                        let started_ago = sample_started_ago(&docker, &id).await;
+
                         samples.push(DockerSample {
                             container_name: name,
                             image_repo,
@@ -92,6 +94,7 @@ pub async fn run(
                             is_running,
                             health,
                             created_ago: humanize_ago(created_at),
+                            started_ago,
                             timeline,
                         });
                     }
@@ -115,6 +118,53 @@ async fn sample_stats(docker: &Docker, id: &str) -> Option<(f64, f64)> {
     let ram_usage = stats.memory_stats.as_ref().and_then(|m| m.usage).unwrap_or(0) as f64;
 
     Some((cpu_usage, ram_usage))
+}
+
+/// Fetches the container's last start time via `inspect` and renders it the
+/// same way as `created_ago`. Distinct from `created_ago` once a container
+/// has been restarted. Returns `—` if the daemon has no start time on record
+/// (never started) or the inspect call fails.
+async fn sample_started_ago(docker: &Docker, id: &str) -> String {
+    let Ok(inspect) = docker.inspect_container(id, None).await else {
+        return "—".to_string();
+    };
+    let started_at = inspect.state.and_then(|s| s.started_at).unwrap_or_default();
+    match parse_rfc3339_to_unix(&started_at) {
+        Some(ts) if ts > 0 => humanize_ago(ts),
+        _ => "—".to_string(),
+    }
+}
+
+/// Parses a Docker-supplied RFC 3339 UTC timestamp (`2024-05-01T12:34:56.123456789Z`)
+/// into Unix seconds, without pulling in a datetime crate for one field.
+fn parse_rfc3339_to_unix(s: &str) -> Option<i64> {
+    let s = s.trim_end_matches('Z');
+    let (date, time) = s.split_once('T')?;
+
+    let mut d = date.splitn(3, '-');
+    let year: i64 = d.next()?.parse().ok()?;
+    let month: i64 = d.next()?.parse().ok()?;
+    let day: i64 = d.next()?.parse().ok()?;
+
+    let time = time.split('.').next().unwrap_or(time);
+    let mut t = time.splitn(3, ':');
+    let hour: i64 = t.next()?.parse().ok()?;
+    let min: i64 = t.next()?.parse().ok()?;
+    let sec: i64 = t.next()?.parse().ok()?;
+
+    Some(days_from_civil(year, month, day) * 86400 + hour * 3600 + min * 60 + sec)
+}
+
+/// Howard Hinnant's `days_from_civil`: converts a Gregorian y/m/d into days
+/// since the Unix epoch (1970-01-01), valid for the proleptic Gregorian calendar.
+fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = y - era * 400;
+    let mp = (m + 9) % 12;
+    let doy = (153 * mp + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146097 + doe - 719468
 }
 
 fn calc_cpu_percent(stats: &bollard::models::ContainerStatsResponse) -> f64 {

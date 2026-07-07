@@ -48,6 +48,10 @@ pub struct DockerSample {
     pub health: HealthStatus,
     /// Human relative time since the container was created (e.g. `9h ago`).
     pub created_ago: String,
+    /// Human relative time since the container was last started (e.g. `9h ago`),
+    /// distinct from `created_ago` when the container has been restarted.
+    /// `—` if the daemon never reported a start time.
+    pub started_ago: String,
     /// Fixed-length uptime timeline over the last 24h, oldest first. Each
     /// entry is a CSS class: `bar-na` (container didn't exist yet),
     /// `bar-up` (sampled = alive that bucket), `bar-down` (no sample =
